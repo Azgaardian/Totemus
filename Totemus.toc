@@ -1,0 +1,16 @@
+## Interface: 11200
+## Title: Totemus
+## Notes: Management of shaman spells, abilities, and reagents
+## OptionalDeps:
+## Dependencies:
+## DefaultState:
+## SavedVariables:
+## SavedVariablesPerCharacter: TotemusConfig
+TotemusGeneral.xml
+Totemus.xml
+TotemusTimer.xml
+TotemusProvisionMenu.xml
+TotemusMessageMenu.xml
+TotemusButtonMenu.xml
+TotemusTimerMenu.xml
+TotemusGraphOptionMenu.xml
