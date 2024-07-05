@@ -1,16 +1,19 @@
 ## Interface: 11200
-## Title: Totemus
-## Notes: Management of shaman spells, abilities, and reagents
-## OptionalDeps:
-## Dependencies:
+## Author: Azgaardian
+## Title: Totemus |cff007fff -Ace-|r
+## Notes: Necrosis Ace'd
 ## DefaultState:
-## SavedVariables:
-## SavedVariablesPerCharacter: TotemusConfig
-TotemusGeneral.xml
+## Dependencies: Ace, Timex
+## OptionalDeps: CompostLib, Metrognome
+## SavedVariables: TotemusDB
+
+Metrognome\MetrognomeLib.lua
+CompostLib\CompostLib.lua
+
 Totemus.xml
-TotemusTimer.xml
-TotemusProvisionMenu.xml
-TotemusMessageMenu.xml
-TotemusButtonMenu.xml
-TotemusTimerMenu.xml
-TotemusGraphOptionMenu.xml
+TotemusLocals_koKR.lua
+TotemusLocals_deDE.lua
+TotemusLocals_frFR.lua
+TotemusLocals_esES.lua
+TotemusLocals.lua
+Totemus.lua
