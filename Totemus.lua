@@ -31,7 +31,7 @@ Totemus = AceAddonClass:new({
 			self.lastupdate = 0
 			self.currentspell = {}
 			self.mounttype = 0
-
+			self.hearthstone = {}
 
 			self.bufftype = 0
 			self.shieldtype = ""
@@ -45,7 +45,9 @@ Totemus = AceAddonClass:new({
 			
 
 			self:SetupFrames()
+--			self.frames.shaman:Show()
 			self.frames.main:Show()
+
 			self:UpdateButtons()
 
 			self:RegisterEvent("BAG_UPDATE")
@@ -126,14 +128,23 @@ Totemus = AceAddonClass:new({
 		return gradient
 	end,
 
-	ScanStones = function( self )
+
+
+	ScanHearth = function( self )
 		local bag
-		local shards = 0
 		local itemLink
-		self.Compost:Erase(self.healthstone)
-		self.Compost:Erase(self.soulstone)
-		self.Compost:Erase(self.spellstone)
-		self.Compost:Erase(self.firestone)
+		self.Compost:Erase(self.hearthstone)
+		--function UseContainerItemByName(search)
+		--for bag = 0,4 do
+		--	for slot = 1,GetContainerNumSlots(bag) do
+		--		local item = GetContainerItemLink(bag,slot)
+		--			if item and string.find(item,search) then
+		--				UseContainerItem(bag,slot)
+		--			end
+		--	end
+		--end
+		--end
+
 		for bag = 4, 0, -1 do
 			local size = GetContainerNumSlots(bag)
 			if (size > 0) then
@@ -141,41 +152,14 @@ Totemus = AceAddonClass:new({
 				for slot=1, size, 1 do
 					if (GetContainerItemLink(bag,slot)) then
 						itemLink = GetContainerItemLink(bag,slot)
-						if( string.find( itemLink, TOTEMUS_CONST.Pattern.Shard ) and
-						not string.find( itemLink, TOTEMUS_CONST.Pattern.Corrupted ) ) then
-							shards = shards + 1
-						elseif( string.find( itemLink, TOTEMUS_CONST.Pattern.Healthstone ) ) then
-							self.healthstone[0] = bag
-							self.healthstone[1] = slot
-						elseif( string.find( itemLink, TOTEMUS_CONST.Pattern.Soulstone ) ) then
-							self.soulstone[0] = bag
-							self.soulstone[1] = slot
-						elseif( string.find( itemLink, TOTEMUS_CONST.Pattern.Spellstone ) ) then
-							self.spellstone[0] = bag
-							self.spellstone[1] = slot
-							self.spellstone[2] = FALSE -- not equipped
-						elseif( string.find( itemLink, TOTEMUS_CONST.Pattern.Firestone ) ) then
-							self.firestone[0] = bag
-							self.firestone[1] = slot
-							self.firestone[2] = FALSE -- not equipped
+						if( string.find( itemLink, TOTEMUS_CONST.Pattern.Hearthstone )) then
+							self.hearthstone[0] = bag
+							self.hearthstone[1] = slot
 						end
 					end
 				end
 			end
 		end
-		if( GetInventoryItemLink("player",GetInventorySlotInfo("SecondaryHandSlot") ) ) then
-			itemLink = GetInventoryItemLink("player",GetInventorySlotInfo("SecondaryHandSlot") )
-			if( string.find( itemLink, TOTEMUS_CONST.Pattern.Spellstone ) ) then
-				self.spellstone[0] = TRUE
-				self.spellstone[1] = TRUE
-				self.spellstone[2] = TRUE -- equipped
-			elseif( string.find( itemLink, TOTEMUS_CONST.Pattern.Firestone ) ) then
-				self.firestone[0] = TRUE
-				self.firestone[1] = TRUE
-				self.firestone[2] = TRUE -- equipped
-			end
-		end
-		self.shardcount = shards
 	end,
 
 	ScanSpells = function( self )
@@ -352,14 +336,6 @@ Totemus = AceAddonClass:new({
 		self.currentspell.duration = self.spells.timed[spell]
 		end
 		 --self:Msg( "Registered t:"..self.currentspell.target.Display.." s: "..self.currentspell.spell.." d: "..self.currentspell.duration )
-	end,
-
-	DeleteSoulstoneTimer = function( self )
-		self.soulstonetimer = nil
-		self.soulstonetarget = nil
-		if( self:GetOpt("soulstonesound") ) then
-			PlaySoundFile("Interface\\AddOns\\Totemus\\Sounds\\Soulstone.mp3")
-		end
 	end,
 
 	ClearTimers = function( self )
@@ -589,6 +565,16 @@ Totemus = AceAddonClass:new({
 		GameTooltip:Hide()
 	end,
 
+	casthearthstoneonenter = function( self, spell_name,frame )
+		GameTooltip:Hide()
+        GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(spell_name)
+        GameTooltip:Show()
+	end,
+	casthearthstoneonleave = function( self, spell_name,frame )
+		GameTooltip:Hide()
+	end,
+
 	castearthtotem = function( self, spellid )
 		
 		CastSpell( spellid, BOOKTYPE_SPELL )
@@ -597,7 +583,6 @@ Totemus = AceAddonClass:new({
 		if( self:GetOpt("closeonclick") ) then
 			self:EarthTotemClicked()
 		end
-		
 		self:EarthTotemClicked()
 	end,
     
@@ -646,6 +631,8 @@ Totemus = AceAddonClass:new({
 		if( self:GetOpt("closeonclick") ) then
 			self:WeaponBuffClicked()
 		end
+		self:WeaponBuffClicked()
+
 	end,
 	
 	castshield = function( self, spellid, Spellbooktab )
@@ -669,31 +656,22 @@ Totemus = AceAddonClass:new({
 		if( self:GetOpt("closeonclick") ) then
 			self:ShieldBuffClicked()
 		end
+			self:ShieldBuffClicked()
+
 	end,
 
 
 	casthearthstone = function( self, spellid )
 	    local name, stoneloc
-		--local itemHearthStoneid, itemHearthStoneslot = self:GetContainerItemInfo('HEARTHSTONE');
-    
-    --if itemMountName ~= nil then        
-	--self:ButtonSetStatus('Mount', true);
-	--self:ButtonSetIcon('Mount', itemMountTexture);
-	--self:ButtonSetItem('Mount', 'LeftButton', itemMountName);
-	--if recallId.index == 0 then
-	--	if itemHearthStoneName ~= nil then
-	--		self:ButtonSetItem('Mount', 'RightButton', itemHearthStoneName);
-	--	else 
-	--		self:ButtonSetItem('Mount', 'RightButton', '');        
-		--name = "hearthstone";
-		--self:SendChatMessage(string.format( itemHearthStoneId ) )
-		--UseContainerItem(0,1)
-		UseItemByName( "HearthStone" )
+	
+		UseContainerItem(self.hearthstone[0],self.hearthstone[1])
+		--UseItemByName( "HearthStone" )
 		--stoneloc =  
         --UseInventoryItem(0,1);
 		if( self:GetOpt("closeonclick") ) then
 			self:HearthClicked()
 		end
+		self:HearthClicked()
 	end,
 	castastral = function( self, spellid )
 		CastSpellByName( "Astral Recall" )
@@ -703,6 +681,7 @@ Totemus = AceAddonClass:new({
 		if( self:GetOpt("closeonclick") ) then
 			self:HearthClicked()
 		end
+		self:HearthClicked()
 	end,
 
 ----------------------------
@@ -759,18 +738,19 @@ Totemus = AceAddonClass:new({
 		self.frames.shardtext:SetJustifyV("MIDDLE")
 
 		--shaman icon
-		self.frames.shaman = CreateFrame("Button", nil, self.frames.main )
-		self.frames.shaman.owner = self
-		self.frames.shaman:SetWidth(80)
-		self.frames.shaman:SetHeight(80)
-		self.frames.shaman:SetPoint("CENTER", self.frames.main, "CENTER", 0 , 0 )
-		self.frames.shaman:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Solid\\SphereIcon" )
-		self.frames.shaman:Show()
+		--self.frames.shaman = CreateFrame("Button", nil, self.frames.main )
+		--self.frames.shaman.owner = self
+		--self.frames.shaman:SetWidth(80)
+		--self.frames.shaman:SetHeight(80)
+		--self.frames.shaman:SetPoint("CENTER", self.frames.main, "CENTER", 0 , 0 )
+		--self.frames.shaman:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Solid\\SphereIcon" )
+		--self.frames.shaman:Show()
 
 		-- Earth Totems button
     
 		self.frames.earthtotem = CreateFrame("Button", nil, self.frames.main )
 		self.frames.earthtotem.owner = self
+		
 		self.frames.earthtotem:SetWidth(38)
 		self.frames.earthtotem:SetHeight(38)
 		self.frames.earthtotem:SetPoint("CENTER", self.frames.main, "CENTER", -19.3 , 46.19 )
@@ -778,10 +758,9 @@ Totemus = AceAddonClass:new({
 		self.frames.earthtotem:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
 		
 		self.frames.earthtotem:SetScript("OnClick", function() this.owner:EarthTotemClicked() end )
-		--self.frames.earthtotem:SetScript("OnEnter", function() this.owner:ETOnEnter() end) 
-		--self.frames.earthtotem:SetScript("OnLeave", function() this.owner:ETOnExit() end) 
         self.frames.earthtotem:SetScript("OnEnter", function() this.owner:castearthtotemonenter("Earth Totems",self.frames.earthtotem) end) 
-		self.frames.earthtotem:SetScript("OnLeave", function() this.owner:castearthtotemonleave("Earth Totems",self.frames.earthtotem) end) 		
+		self.frames.earthtotem:SetScript("OnLeave", function() this.owner:castearthtotemonleave("Earth Totems",self.frames.earthtotem) end) 
+			
 		 
 		-- Earth totem Menu 
 		self.frames.earthtotemmenu = CreateFrame("Frame", nil, self.frames.earthtotem )
@@ -801,7 +780,7 @@ Totemus = AceAddonClass:new({
 		self.frames.sst:SetHeight(38)
 		self.frames.sst:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\spell_nature_stoneskintotem")
 		self.frames.sst:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
-		self.frames.sst:SetPoint("TOPRIGHT", self.frames.earthtotemmenu, "TOPLEFT", etx, 0 )
+		self.frames.sst:SetPoint("TOPRIGHT", self.frames.earthtotemmenu, "TOPLEFT", etx, 6.5 )
 		self.frames.sst:SetScript("OnClick", function() this.owner:castearthtotem( this.owner.spells.normal["SST"] ) end )
 		self.frames.sst:SetScript("OnEnter", function() this.owner:castearthtotemonenter("Stone Skin",self.frames.sst) end) 
 		self.frames.sst:SetScript("OnLeave", function() this.owner:castearthtotemonleave("Stone Skin",self.frames.sst) end) 
@@ -809,21 +788,21 @@ Totemus = AceAddonClass:new({
 		tmp_x = etx
 		
 		-- Earth Bind Skin
-		if( self.spells.normal["EBT"] ) then  etx = tmp_x - 38 end
+		if( self.spells.normal["EBT"] ) then  etx = tmp_x - 32 end
 		self.frames.ebt = CreateFrame("Button", nil, self.frames.earthtotemmenu )
 		self.frames.ebt.owner = self
 		self.frames.ebt:SetWidth(38)
 		self.frames.ebt:SetHeight(38)
 		self.frames.ebt:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Spell_Nature_StrengthOfEarthTotem02")
 		self.frames.ebt:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
-		self.frames.ebt:SetPoint("TOPRIGHT", self.frames.earthtotemmenu, "TOPLEFT", etx, 0 )
+		self.frames.ebt:SetPoint("TOPRIGHT", self.frames.earthtotemmenu, "TOPLEFT", etx, 6.5 )
 		self.frames.ebt:SetScript("OnClick", function() this.owner:castearthtotem( this.owner.spells.normal["EBT"] ) end )
 		self.frames.ebt:SetScript("OnEnter", function() this.owner:castearthtotemonenter("Earth Bind",self.frames.ebt) end)
 		self.frames.ebt:SetScript("OnLeave", function() this.owner:castearthtotemonleave("Earth Bind",self.frames.ebt) end)
 		tmp_x = etx
 
 		-- Stoneclaw Skin
-        if( self.spells.normal["SCT"] ) then  etx = tmp_x - 38 end
+        if( self.spells.normal["SCT"] ) then  etx = tmp_x - 32 end
 		self.frames.sct = CreateFrame("Button", nil, self.frames.earthtotemmenu )
 				
 		self.frames.sct.owner = self
@@ -831,35 +810,35 @@ Totemus = AceAddonClass:new({
 		self.frames.sct:SetHeight(38)
 		self.frames.sct:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Spell_Nature_StoneClawTotem")
 		self.frames.sct:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
-		self.frames.sct:SetPoint("TOPRIGHT", self.frames.earthtotemmenu, "TOPLEFT", etx, 0 )
+		self.frames.sct:SetPoint("TOPRIGHT", self.frames.earthtotemmenu, "TOPLEFT", etx, 6.5 )
 		self.frames.sct:SetScript("OnClick", function() this.owner:castearthtotem( this.owner.spells.normal["SCT"] ) end )
 		self.frames.sct:SetScript("OnEnter", function() this.owner:castearthtotemonenter("Stone Claw",self.frames.sct) end)
 		self.frames.sct:SetScript("OnLeave", function() this.owner:castearthtotemonleave("Stone Claw",self.frames.sct) end)
 		tmp_x = etx
 
 		-- strength of earth
-        if( self.spells.normal["SOET"] ) then  etx = tmp_x - 38 end
+        if( self.spells.normal["SOET"] ) then  etx = tmp_x - 32 end
 		self.frames.soe = CreateFrame("Button", nil, self.frames.earthtotemmenu )
 		self.frames.soe.owner = self
 		self.frames.soe:SetWidth(38)
 		self.frames.soe:SetHeight(38)
 		self.frames.soe:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Spell_Nature_EarthBindTotem")
 		self.frames.soe:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
-		self.frames.soe:SetPoint("TOPRIGHT", self.frames.earthtotemmenu, "TOPLEFT", etx, 0 )
+		self.frames.soe:SetPoint("TOPRIGHT", self.frames.earthtotemmenu, "TOPLEFT", etx, 6.5 )
 		self.frames.soe:SetScript("OnClick", function() this.owner:castearthtotem( this.owner.spells.normal["SOET"] ) end )	
 		self.frames.soe:SetScript("OnEnter", function() this.owner:castearthtotemonenter("Strength of Earth",self.frames.soe) end)
 		self.frames.soe:SetScript("OnLeave", function() this.owner:castearthtotemonleave("Strength of Earth",self.frames.soe) end)
        	tmp_x = etx
 		
 		-- TRET Skin
-		if( self.spells.normal["TRET"] ) then  etx = etx -38 end
+		if( self.spells.normal["TRET"] ) then  etx = tmp_x -32 end
 		self.frames.tret = CreateFrame("Button", nil, self.frames.earthtotemmenu )
 		self.frames.tret.owner = self
 		self.frames.tret:SetWidth(38)
 		self.frames.tret:SetHeight(38)
 		self.frames.tret:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Spell_Nature_TremorTotem")
 		self.frames.tret:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
-		self.frames.tret:SetPoint("TOPRIGHT", self.frames.earthtotemmenu, "TOPLEFT", etx, 0 )
+		self.frames.tret:SetPoint("TOPRIGHT", self.frames.earthtotemmenu, "TOPLEFT", etx, 6.5 )
 		self.frames.tret:SetScript("OnClick", function() this.owner:castearthtotem( this.owner.spells.normal["TRET"] ) end )		
 		self.frames.tret:SetScript("OnEnter", function() this.owner:castearthtotemonenter("Tremor Totem",self.frames.tret) end)
 		self.frames.tret:SetScript("OnLeave", function() this.owner:castearthtotemonleave("Tremor Totem",self.frames.tret) end)
@@ -993,7 +972,7 @@ Totemus = AceAddonClass:new({
 		self.frames.grdt:SetHeight(38)
 		self.frames.grdt:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Spell_Nature_GroundingTotem")
 		self.frames.grdt:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
-		self.frames.grdt:SetPoint("TOPRIGHT", self.frames.airtotemmenu, "TOPLEFT", atx, 0 )
+		self.frames.grdt:SetPoint("TOPRIGHT", self.frames.airtotemmenu, "TOPLEFT", atx, -6.5 )
 		self.frames.grdt:SetScript("OnClick", function() this.owner:castairtotem( this.owner.spells.normal["GRDT"] ) end )	
         self.frames.grdt:SetScript("OnEnter", function() this.owner:castairtotemonenter("Grounding",self.frames.grdt) end)
 		self.frames.grdt:SetScript("OnLeave", function() this.owner:castairtotemonleave("Grounding",self.frames.grdt) end)
@@ -1008,7 +987,7 @@ Totemus = AceAddonClass:new({
 		self.frames.nrt:SetHeight(38)
 		self.frames.nrt:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Spell_Nature_NatureResistanceTotem")
 		self.frames.nrt:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
-		self.frames.nrt:SetPoint("TOPRIGHT", self.frames.airtotemmenu, "TOPLEFT", atx, 0 )
+		self.frames.nrt:SetPoint("TOPRIGHT", self.frames.airtotemmenu, "TOPLEFT", atx, -6.5 )
 		self.frames.nrt:SetScript("OnClick", function() this.owner:castairtotem( this.owner.spells.normal["NRT"] ) end )	
         self.frames.nrt:SetScript("OnEnter", function() this.owner:castairtotemonenter("Nature Resist",self.frames.nrt) end)
 		self.frames.nrt:SetScript("OnLeave", function() this.owner:castairtotemonleave("Nature Resist",self.frames.nrt) end)
@@ -1023,7 +1002,7 @@ Totemus = AceAddonClass:new({
 		self.frames.wft:SetHeight(38)
 		self.frames.wft:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Spell_Nature_Windfury")
 		self.frames.wft:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
-		self.frames.wft:SetPoint("TOPRIGHT", self.frames.airtotemmenu, "TOPLEFT", atx, 0 )
+		self.frames.wft:SetPoint("TOPRIGHT", self.frames.airtotemmenu, "TOPLEFT", atx, -6.5 )
 		self.frames.wft:SetScript("OnClick", function() this.owner:castairtotem( this.owner.spells.normal["WFT"] ) end )	
         self.frames.wft:SetScript("OnEnter", function() this.owner:castairtotemonenter("Windfury",self.frames.wft) end)
 		self.frames.wft:SetScript("OnLeave", function() this.owner:castairtotemonleave("Windfury",self.frames.wft) end)
@@ -1038,7 +1017,7 @@ Totemus = AceAddonClass:new({
 		self.frames.sent:SetHeight(38)
 		self.frames.sent:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Spell_Nature_RemoveCurse")
 		self.frames.sent:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
-		self.frames.sent:SetPoint("TOPRIGHT", self.frames.airtotemmenu, "TOPLEFT", atx, 0 )
+		self.frames.sent:SetPoint("TOPRIGHT", self.frames.airtotemmenu, "TOPLEFT", atx, -6.5 )
 		self.frames.sent:SetScript("OnClick", function() this.owner:castairtotem( this.owner.spells.normal["SENT"] ) end )	
         self.frames.sent:SetScript("OnEnter", function() this.owner:castairtotemonenter("Sentry",self.frames.sent) end)
 		self.frames.sent:SetScript("OnLeave", function() this.owner:castairtotemonleave("Sentry",self.frames.sent) end)
@@ -1053,7 +1032,7 @@ Totemus = AceAddonClass:new({
 		self.frames.wwt:SetHeight(38)
 		self.frames.wwt:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Spell_Nature_EarthBind")
 		self.frames.wwt:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
-		self.frames.wwt:SetPoint("TOPRIGHT", self.frames.airtotemmenu, "TOPLEFT", atx, 0 )
+		self.frames.wwt:SetPoint("TOPRIGHT", self.frames.airtotemmenu, "TOPLEFT", atx, -6.5 )
 		self.frames.wwt:SetScript("OnClick", function() this.owner:castairtotem( this.owner.spells.normal["WWT"] ) end )	
         self.frames.wwt:SetScript("OnEnter", function() this.owner:castairtotemonenter("Wind Wall",self.frames.wwt) end)
 		self.frames.wwt:SetScript("OnLeave", function() this.owner:castairtotemonleave("Wind Wall",self.frames.wwt) end)
@@ -1068,7 +1047,7 @@ Totemus = AceAddonClass:new({
 		self.frames.goat:SetHeight(38)
 		self.frames.goat:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Spell_Nature_InvisibilityTotem")
 		self.frames.goat:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
-		self.frames.goat:SetPoint("TOPRIGHT", self.frames.airtotemmenu, "TOPLEFT", atx, 0 )
+		self.frames.goat:SetPoint("TOPRIGHT", self.frames.airtotemmenu, "TOPLEFT", atx, -6.5 )
 		self.frames.goat:SetScript("OnClick", function() this.owner:castairtotem( this.owner.spells.normal["GOAT"] ) end )	
         self.frames.goat:SetScript("OnEnter", function() this.owner:castairtotemonenter("Grace of Air",self.frames.goat) end)
 		self.frames.goat:SetScript("OnLeave", function() this.owner:castairtotemonleave("Grace of Air",self.frames.goat) end)
@@ -1083,7 +1062,7 @@ Totemus = AceAddonClass:new({
 		self.frames.trac:SetHeight(38)
 		self.frames.trac:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Spell_Nature_Brilliance")
 		self.frames.trac:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
-		self.frames.trac:SetPoint("TOPRIGHT", self.frames.airtotemmenu, "TOPLEFT", atx, 0 )
+		self.frames.trac:SetPoint("TOPRIGHT", self.frames.airtotemmenu, "TOPLEFT", atx, -6.5 )
 		self.frames.trac:SetScript("OnClick", function() this.owner:castairtotem( this.owner.spells.normal["TRAC"] ) end )	
         self.frames.trac:SetScript("OnEnter", function() this.owner:castairtotemonenter("Tranquil",self.frames.trac) end)
 		self.frames.trac:SetScript("OnLeave", function() this.owner:castairtotemonleave("Tranquil",self.frames.trac) end)
@@ -1237,8 +1216,10 @@ Totemus = AceAddonClass:new({
 		self.frames.hearth:SetPoint("CENTER", self.frames.main, "CENTER", 19.13, 46.19 )
 		self.frames.hearth:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\INV_Misc_Rune_01" )
 		self.frames.hearth:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
-		
 		self.frames.hearth:SetScript("OnClick", function() this.owner:HearthClicked() end )
+		self.frames.hearth:SetScript("OnEnter", function() this.owner:casthearthstoneonenter("GTFO",self.frames.hearth) end)
+		self.frames.hearth:SetScript("OnLeave", function() this.owner:casthearthstoneonleave("GTFO",self.frames.hearth) end)
+
 		-- hearth menu
 		self.frames.hearthbuffmenu = CreateFrame("Frame", nil, self.frames.hearth )
 		self.frames.hearthbuffmenu.owner = self
@@ -1253,10 +1234,10 @@ Totemus = AceAddonClass:new({
 		self.frames.stone:SetHeight(38)
 		self.frames.stone:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\INV_Misc_Rune_01")
 		self.frames.stone:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
-		self.frames.stone:SetPoint("TOPRIGHT", self.frames.hearthbuffmenu, "TOPRIGHT", 30.91, 8.28 )
+		self.frames.stone:SetPoint("TOPRIGHT", self.frames.hearthbuffmenu, "TOPRIGHT", 32, 6.5 )
 		self.frames.stone:SetScript("OnClick", function() this.owner:casthearthstone( this.owner.spells.normal["HEARTHSTONE"] ) end )		
-		--self.frames.ls:SetScript("OnEnter", function() this.owner:casthearthstoneonenter("Lighting",self.frames.shieldbuff) end)
-		--self.frames.ls:SetScript("OnLeave", function() this.owner:castshieldonleave("Lighting",self.frames.shieldbuff) end)
+		self.frames.stone:SetScript("OnEnter", function() this.owner:casthearthstoneonenter("Hearth",self.frames.stone) end)
+		self.frames.stone:SetScript("OnLeave", function() this.owner:casthearthstoneonleave("Hearth",self.frames.stone) end)
 
 	
 		self.frames.astral = CreateFrame("Button", nil, self.frames.hearthbuffmenu )
@@ -1265,8 +1246,10 @@ Totemus = AceAddonClass:new({
 		self.frames.astral:SetHeight(38)
 		self.frames.astral:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Spell_Nature_AstralRecal")
 		self.frames.astral:SetHighlightTexture( "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight" )
-		self.frames.astral:SetPoint("TOPRIGHT", self.frames.hearthbuffmenu, "TOPRIGHT", 64, 8.28 )
+		self.frames.astral:SetPoint("TOPRIGHT", self.frames.hearthbuffmenu, "TOPRIGHT", 64, 6.5 )
 		self.frames.astral:SetScript("OnClick", function() this.owner:castastral( this.owner.spells.normal["ASTRAL"] ) end )		
+		self.frames.astral:SetScript("OnEnter", function() this.owner:casthearthstoneonenter("Astral Recall",self.frames.astral) end)
+		self.frames.astral:SetScript("OnLeave", function() this.owner:casthearthstoneonleave("Astral Recall",self.frames.astral) end)
 
 		
 		-- Weapon Buffs button
@@ -1455,7 +1438,6 @@ Totemus = AceAddonClass:new({
 	UpdateShardCount = function( self )
 		mana_perc = math.floor((UnitMana('player') * 16 / UnitManaMax('player')) + 0.5);
 		mana_string = (math.floor((UnitMana('player') * 100 / UnitManaMax('player')) + 0.5))..'%\n'..UnitMana('player');
-
 		self.shardcount = mana_string
 		if( mana_perc >= 16 ) then
 		    self.frames.shard:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Solid\\Shards\\Shard16") 
@@ -1491,11 +1473,9 @@ Totemus = AceAddonClass:new({
 			self.frames.shard:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Solid\\Shards\\Shard1") 
 		elseif ( mana_perc < 1 ) and ( mana_perc >= 0 ) then
 			self.frames.shard:SetNormalTexture( "Interface\\AddOns\\Totemus\\Images\\Solid\\Shards\\Shard0") 
-
 		end
 		
-		self.frames.shardtext:SetText(""..self.shardcount )
-		self.frames.shaman:Show()
+		self.frames.shardtext:SetText(""..self.shardcount )		
 	end,
 
 	UpdateOtherButtons = function( self ) 
@@ -1666,25 +1646,25 @@ Totemus = AceAddonClass:new({
 	end
 
 	-- lighting shield
---	if( not self.spells.normal["LS"] ) then
---			self.frames.ls:Hide()
---		else
---			self.frames.ls:Show()
---	end
+	if( not self.spells.normal["LS"] ) then
+			self.frames.ls:Hide()
+		else
+			self.frames.ls:Show()
+	end
 
 	-- water shield
---	if( not self.spells.normal["WS"] ) then
---			self.frames.ws:Hide()
---		else
---			self.frames.ws:Show()
---	end
+	if( not self.spells.normal["WS"] ) then
+			self.frames.ws:Hide()
+		else
+			self.frames.ws:Show()
+	end
 
 	-- earth shield
---	if( not self.spells.normal["ES"] ) then
---			self.frames.ws:Hide()
---		else
---			self.frames.ws:Show()
---	end
+	if( not self.spells.normal["ES"] ) then
+			self.frames.es:Hide()
+		else
+			self.frames.es:Show()
+	end
 
 	end,
 
@@ -1718,7 +1698,7 @@ Totemus = AceAddonClass:new({
 	end,
 
 	UpdateButtons = function( self )
-		self:UpdateShardCount()
+		--self:UpdateShardCount()
 		--self:UpdateHealthstone()
 		--self:UpdateSoulstone()
 		--self:UpdateFirestone()
@@ -1775,44 +1755,13 @@ Totemus = AceAddonClass:new({
 		end
 	end,
 
-	SoulstoneClicked = function( self )
-		if( self.soulstone[0] ~= nil ) then
-			if ( not UnitIsEnemy("player", "target") and UnitExists("target") ) then
-				UseContainerItem( self.soulstone[0], self.soulstone[1] )
-			end
-		else
-			CastSpell( self.spells.normal["SOULSTONE"], BOOKTYPE_SPELL )
-		end
-	end,
 
-	SpellstoneClicked = function( self )
-		if( self.spellstone[0] ~= nil ) then
-			if( self.spellstone[2] ) then
-				UseInventoryItem(GetInventorySlotInfo("SecondaryHandSlot"))
-				self:BAG_UPDATE()
-			else
-				UseContainerItem(self.spellstone[0], self.spellstone[1])
-			end
-		else
-			CastSpell( self.spells.normal["SPELLSTONE"], BOOKTYPE_SPELL )
-		end
-	end,
-
-	FirestoneClicked = function( self )
-		if( self.firestone[0] ~= nil ) then
-			if( not self.firestone[2] ) then
-				UseContainerItem(self.firestone[0], self.firestone[1])
-			end
-		else
-			CastSpell( self.spells.normal["FIRESTONE"], BOOKTYPE_SPELL )
-		end
-	end,
 
 	EarthTotemClicked = function( self )
 	    --if( self.spells.normal["EARTH"] ) then
 		--	CastSpell( self.spells.normal["EARTH"], BOOKTYPE_SPELL )
 		--end
-		if( self.frames.earthtotemmenu.opened ) then
+		if ( self.frames.earthtotemmenu.opened ) then
 			self.frames.earthtotemmenu:Hide()
 			self.frames.earthtotemmenu.opened = FALSE
 		else
@@ -2038,7 +1987,7 @@ Totemus = AceAddonClass:new({
 ----------------------------
 
 	Totemus_BAG_UPDATE = function( self )
-		--self:ScanStones()
+		self:ScanHearth()
 		--self:UpdateShardCount()
 		--self:UpdateHealthstone()
 		--self:UpdateSoulstone()
@@ -2204,7 +2153,7 @@ Totemus = AceAddonClass:new({
 		else
 			self:Msg( TOTEMUS_CONST.Chat.Texture .. "default" )
 		end
-		self:UpdateShardCount()
+		--self:UpdateShardCount()
 	end,
 
 

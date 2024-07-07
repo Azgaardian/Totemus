@@ -13,7 +13,7 @@ if( not ace:LoadTranslation("TOTEMUS") ) then
 		Timerheader		= "Shaman Timers",
 		UpdateInterval		= 0.2,
 	
-		ChatCmd		= {"/totem", "/TOTEMUS", "/TOTEMUS"},
+		ChatCmd		= {"/totem", "/totemus"},
 		
 		ChatOpt 		= {
 			{	
@@ -83,7 +83,7 @@ if( not ace:LoadTranslation("TOTEMUS") ) then
 		
 
 		Pattern = {
-			Shard = "Soul Shard",
+			Healthstone = "Hearthstone",
 			Corrupted = "Corrupted",
 			Healthstone = "Healthstone",
 			Soulstone = "Soulstone",

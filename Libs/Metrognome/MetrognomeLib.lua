@@ -1,7 +1,5 @@
 
-local vmajor, vminor = "Metrognome", tonumber(string.sub("$Revision: 12749 $", 12, -3))
-local vgmajor = 1
-local vgminor = 0
+local vmajor, vminor = "1", tonumber(string.sub("$Revision: 12749 $", 12, -3))
 local stubvarname = "TekLibStub"
 local libvarname = "Metrognome"
 
@@ -9,7 +7,7 @@ local libvarname = "Metrognome"
 -- Check to see if an update is needed
 -- if not then just return out now before we do anything
 local libobj = getglobal(libvarname)
-if libobj and not libobj:NeedsUpgraded(vgmajor, vgminor) then return end
+if libobj and not libobj:NeedsUpgraded(vmajor, vminor) then return end
 
 
 ---------------------------------------------------------------------------
@@ -44,9 +42,9 @@ if not stubobj then
 
 
 	-- Get instance version
-	function stubobj:NeedsUpgraded(vgmajor, vgminor)
-		local versionData = self.versions[vgmajor]
-		if not versionData or versionData.minor < vgminor then return true end
+	function stubobj:NeedsUpgraded(vmajor, vminor)
+		local versionData = self.versions[vmajor]
+		if not versionData or versionData.minor < vminor then return true end
 	end
 
 
@@ -60,7 +58,7 @@ if not stubobj then
 
 
 	-- Register new instance
-function stubobj:Register(newInstance)
+	function stubobj:Register(newInstance)
 		 local version,minor = newInstance:GetLibraryVersion()
 		 self.lastVersion = version
 		 local versionData = self.versions[version]
@@ -100,13 +98,13 @@ local lib = {}
 
 -- Return the library's current version
 function lib:GetLibraryVersion()
-	return 3, 1
+	return vmajor, vminor
 end
 
 local compost
 -- Activate a new instance of this library
 function lib:LibActivate(stub, oldLib, oldList)
-	local maj, min = 1,1
+	local maj, min = self:GetLibraryVersion()
 
 	if oldLib then
 		local omaj, omin = oldLib:GetLibraryVersion()
@@ -277,6 +275,3 @@ end
 --      Load this bitch!      --
 --------------------------------
 libobj:Register(lib)
-
-
-AceLibrary:Register(Metrognome, vmajor, vminor, Metrognome.activate, nil, external)
